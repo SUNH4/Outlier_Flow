@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head> 
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Navi - 카드 추천 시스템</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; color: #333;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .header { text-align: center; margin-bottom: 3rem; }
+        .logo { font-size: 3.5rem; font-weight: 700; color: white; text-shadow: 0 4px 8px rgba(0,0,0,0.3); margin-bottom: 1rem; }
+        .subtitle { color: rgba(255,255,255,0.9); font-size: 1.2rem; }
+        .main-card {
+            background: rgba(255,255,255,0.95); border-radius: 20px; padding: 3rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1); backdrop-filter: blur(10px);
+        }
+        .section-title { font-size: 1.8rem; font-weight: 600; color: #2c3e50; margin-bottom: 2rem; text-align: center; }
+        .selection-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-bottom: 2rem; }
+        .selection-item { background: #f8f9fa; padding: 1.5rem; border-radius: 15px; border-left: 4px solid #667eea; }
+        .selection-label { font-weight: 600; color: #495057; margin-bottom: 1rem; }
+        select {
+            width: 100%; padding: 1rem; border: 2px solid #e9ecef; border-radius: 12px;
+            font-size: 1rem; font-weight: 600; background: white;
+        }
+        .search-section { text-align: center; margin: 2rem 0; }
+        .search-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; padding: 1rem 3rem; font-size: 1.1rem;
+            border-radius: 50px; cursor: pointer;
+        }
+        .action-button {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white; border: none; padding: 0.8rem 2rem; font-size: 1rem;
+            font-weight: 600; border-radius: 25px; cursor: pointer;
+            margin: 1rem 0;
+        }
+        .results-card {
+            background: #fff; border-radius: 15px; padding: 1rem; margin-bottom: 1rem;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        .results-card img { max-width: 150px; display: block; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="logo">Card Navi</h1>
+            <p class="subtitle">맞춤형 카드 추천 시스템</p>
+        </header>
+        <main class="main-card">
+            <h2 class="section-title">지역구, 성별, 연령대 선택 후 검색 버튼을 눌러 주세요</h2>
+            <div class="selection-grid">
+                <div class="selection-item">
+                    <div class="selection-label">지역구 선택</div>
+                    <select id="region">
+                        <option value="Gwan">권선구</option>
+                        <option value="Young">영통구</option>
+                        <option value="Jang">장안구</option>
+                        <option value="Pal">팔달구</option>
+                    </select>
+                </div>
+                <div class="selection-item">
+                    <div class="selection-label">성별 선택</div>
+                    <select id="sex">
+                        <option value="M">남성</option>
+                        <option value="F">여성</option>
+                    </select>
+                </div>
+                <div class="selection-item">
+                    <div class="selection-label">연령 선택</div>
+                    <select id="age">
+                        <option value="20s">20대</option>
+                        <option value="30s">30대</option>
+                        <option value="40s">40대</option>
+                        <option value="50s">50대</option>
+                        <option value="60s">60대</option>
+                        <option value="70s">70대</option>
+                        <option value="80s">80대</option>
+                        <option value="90s">90대</option>
+                    </select>
+                </div>
+            </div>
+            <div class="search-section">
+                <button class="search-button" onclick="showOptions()">🔍 검색하기</button>
+            </div>
+            <div id="resultContainer" class="dynamic-content"></div>
+        </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script>
+        let cardData = [];
+        const subCategoryMap = {
+            "공연/전시": ["공연관람", "문화서비스", "전시장", "경기관람"],
+            "디저트": ["제과/제빵/떡/케익", "커피/음료"],
+            "생활서비스": ["미용서비스", "세탁/가사서비스", "연료판매", "차량관리/서비스", "보안/운송", "무점포서비스", "사우나/휴게시설", "수리서비스", "렌탈서비스", "교통서비스", "전문서비스", "여행/유학대행", "부동산"],
+            "소매/유통": ["건강/기호식품", "사무/교육용품", "서적/도서", "선물/완구", "스포츠/레져용품", "음/식료품소매", "의복/의류", "인테리어/가정용품", "종합소매점", "차량관리/부품", "악기/공예", "패션잡화", "화장품소매", "차량판매", "가전제품", "유아용품"],
+            "식사": ["고기요리", "닭/오리요리", "별식/퓨전요리", "부페", "분식", "양식", "일식/수산물", "중식", "패스트푸드", "한식", "휴게소/대형업체"],
+            "여가/오락": ["숙박", "일반스포츠", "취미/오락", "요가/단전/마사지"],
+            "의료/건강": ["수의업", "의약/의료품", "일반병원", "특화병원", "종합병원"],
+            "전자상거래": ["인터넷쇼핑", "음식배달서비스"]
+        };
+
+        fetch('final_web.csv')
+          .then(res => res.text())
+          .then(text => {
+              const parsed = Papa.parse(text, { header: true });
+              cardData = parsed.data;
+          });
+
+        function showOptions() {
+            const container = document.getElementById("resultContainer");
+            container.innerHTML = "";
+
+            Object.keys(subCategoryMap).forEach(cat => {
+                const box = document.createElement("div");
+                box.innerHTML = `<label><input type="checkbox" name="recommended" value="${cat}"> ${cat}</label>`;
+                container.appendChild(box);
+            });
+
+            const subBtn = document.createElement("button");
+            subBtn.className = "action-button";
+            subBtn.textContent = "소분류 검색";
+            subBtn.onclick = showSubCategories;
+            container.appendChild(subBtn);
+
+            const cardBtn = document.createElement("button");
+            cardBtn.className = "action-button";
+            cardBtn.textContent = "카드 검색";
+            cardBtn.onclick = searchCards;
+            container.appendChild(cardBtn);
+        }
+
+        function showSubCategories() {
+            const selected = Array.from(document.querySelectorAll('input[name="recommended"]:checked')).map(el => el.value);
+            const container = document.getElementById("resultContainer");
+            container.innerHTML = "";
+
+            selected.forEach(cat => {
+                const subList = subCategoryMap[cat] || [];
+                const group = document.createElement("div");
+                group.innerHTML = `<strong>${cat}</strong><br>` +
+                    subList.map(sub => `<label><input type="checkbox" name="subcategory" value="${sub}"> ${sub}</label>`).join(" ");
+                container.appendChild(group);
+            });
+
+            const cardBtn = document.createElement("button");
+            cardBtn.className = "action-button";
+            cardBtn.textContent = "카드 검색";
+            cardBtn.onclick = searchCards;
+            container.appendChild(cardBtn);
+        }
+
+        function searchCards() {
+            const bigSel = Array.from(document.querySelectorAll('input[name="recommended"]:checked')).map(el => el.value);
+            const subSel = Array.from(document.querySelectorAll('input[name="subcategory"]:checked')).map(el => el.value);
+
+            if (bigSel.length === 0 && subSel.length === 0) {
+                alert("대분류나 소분류를 선택하세요!");
+                return;
+            }
+
+            const results = cardData.filter(card => {
+                try {
+                    const bigTags = JSON.parse(card['대분류태그'].replace(/'/g, '"'));
+                    const smallTags = JSON.parse(card['소분류태그'].replace(/'/g, '"'));
+                    return bigSel.some(cat => bigTags.includes(cat)) || subSel.some(sub => smallTags.includes(sub));
+                } catch(e) {
+                    return false;
+                }
+            });
+
+            displayCardResults(results);
+        }
+
+        function displayCardResults(cards) {
+            const container = document.getElementById("resultContainer");
+            container.innerHTML = "";
+
+            if (cards.length === 0) {
+                container.innerHTML = "<p>조건에 맞는 카드가 없습니다.</p>";
+                return;
+            }
+
+            cards.forEach(c => {
+                const cardEl = document.createElement("div");
+                cardEl.className = "results-card";
+                cardEl.innerHTML = `
+                    <img src="${c['이미지 URL']}" alt="${c['카드명']}">
+                    <h4>${c['카드명']}</h4>
+                    <p><strong>혜택:</strong> ${c['통합혜택']}</p>
+                    <p><strong>업종:</strong> ${c['대분류태그']} / ${c['소분류태그']}</p>
+                    <a href="${c['카드 디테일 링크']}" target="_blank">자세히 보기</a>
+                `;
+                container.appendChild(cardEl);
+            });
+        }
+    </script>
+</body>
+</html>
