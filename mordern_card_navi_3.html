@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Card Navi - 카드 추천 시스템</title>
+    <style>
+        /* === (원본 스타일 유지) === */
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+               background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); min-height:100vh; color:#333; }
+        .container{ max-width:1200px; margin:0 auto; padding:2rem; }
+        .header{ text-align:center; margin-bottom:3rem; animation:fadeInDown .8s ease-out; }
+        .logo{ font-size:3.5rem; font-weight:700; color:white; text-shadow:0 4px 8px rgba(0,0,0,.3); margin-bottom:1rem; letter-spacing:-2px;}
+        .subtitle{ color: rgba(255,255,255,.9); font-size:1.2rem; font-weight:300; }
+
+        .main-card{ background:rgba(255,255,255,.95); border-radius:20px; padding:3rem; box-shadow:0 20px 40px rgba(0,0,0,.1);
+                    backdrop-filter: blur(10px); border:1px solid rgba(255,255,255,.3); animation:fadeInUp .8s ease-out .4s both; }
+
+        .section-title{ font-size:1.8rem; font-weight:600; color:#2c3e50; margin-bottom:2rem; text-align:center; position:relative; }
+        .section-title::after{ content:''; position:absolute; bottom:-10px; left:50%; transform:translateX(-50%); width:60px; height:3px;
+                               background:linear-gradient(90deg,#667eea,#764ba2); border-radius:2px; }
+
+        .selection-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:2rem; margin-bottom:2rem; }
+        .selection-item{ background:linear-gradient(135deg,#f8f9fa 0%,#e9ecef 100%); padding:1.5rem; border-radius:15px; border-left:4px solid #667eea;
+                         transition:all .3s ease; }
+        .selection-item:hover{ transform:translateY(-5px); box-shadow:0 10px 30px rgba(0,0,0,.15); border-left-color:#764ba2; }
+
+        .selection-label{ font-weight:600; color:#495057; font-size:1rem; margin-bottom:1rem; display:flex; align-items:center; }
+        .selection-badge{ background:linear-gradient(45deg,#667eea,#764ba2); color:white; padding:.3rem .8rem; border-radius:20px;
+                          font-size:.8rem; font-weight:500; margin-left:.5rem; }
+
+        select{ width:100%; padding:1rem; border:2px solid #e9ecef; border-radius:12px; font-size:1rem; font-weight:600; color:#2c3e50; background:white; cursor:pointer; transition:all .3s ease; }
+        select:hover{ border-color:#667eea; background:#f8f9ff; }
+        select:focus{ outline:none; border-color:#667eea; box-shadow:0 0 0 3px rgba(102,126,234,.1); }
+
+        .search-section{ text-align:center; margin:2rem 0; }
+        .search-button{ background:linear-gradient(135deg,#667eea,#764ba2); color:white; border:none; padding:1rem 3rem; font-size:1.1rem; font-weight:600; border-radius:50px; cursor:pointer; transition:all .3s ease; box-shadow:0 4px 15px rgba(102,126,234,.3); }
+        .search-button:hover{ transform:translateY(-2px); box-shadow:0 8px 25px rgba(102,126,234,.4); }
+        .search-button:active{ transform:translateY(0); }
+
+        .dynamic-content{ margin-top:2rem; animation:fadeInUp .5s ease-out; }
+        .results-card{ background:linear-gradient(135deg,#f8f9fa,#ffffff); border-radius:15px; padding:2rem; margin-bottom:2rem; box-shadow:0 8px 25px rgba(0,0,0,.1); border:1px solid rgba(102,126,234,.2); }
+        .category-title{ font-size:1.4rem; font-weight:600; color:#2c3e50; margin-bottom:1.5rem; padding-bottom:.5rem; border-bottom:2px solid #667eea; display:inline-block; }
+
+        .checkbox-group{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:.8rem; margin-bottom:2rem; }
+        .checkbox-group label{ display:flex; align-items:center; padding:.8rem; background:white; border-radius:10px; border:2px solid #e9ecef; transition:all .3s ease; cursor:pointer; position:relative; overflow:hidden; }
+        .checkbox-group label::before{ content:''; position:absolute; top:0; left:-100%; width:100%; height:100%; background:linear-gradient(90deg,transparent, rgba(102,126,234,.1),transparent); transition:left .5s; }
+        .checkbox-group label:hover::before{ left:100%; }
+        .checkbox-group label:hover{ border-color:#667eea; background:#f8f9ff; transform:translateY(-2px); }
+        .checkbox-group input[type="checkbox"]{ width:18px; height:18px; margin-right:.8rem; accent-color:#667eea; cursor:pointer; }
+        .checkbox-group input[type="checkbox"]:checked + span{ color:#667eea; font-weight:600; }
+
+        .subcategory-group{ background:rgba(102,126,234,.05); border-radius:12px; padding:1.5rem; margin-bottom:1.5rem; border-left:4px solid #667eea; }
+        .subcategory-title{ font-size:1.1rem; font-weight:600; color:#667eea; margin-bottom:1rem; display:flex; align-items:center; }
+        .subcategory-title::before{ content:'📂'; margin-right:.5rem; }
+        .subcategory-items{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:.5rem; }
+        .subcategory-items label{ padding:.6rem; font-size:.9rem; }
+
+        .action-button{ background:linear-gradient(135deg,#28a745,#20c997); color:white; border:none; padding:.8rem 2rem; font-size:1rem; font-weight:600; border-radius:25px; cursor:pointer; transition:all .3s ease; margin:1rem 0; box-shadow:0 4px 15px rgba(40,167,69,.3); }
+        .action-button:hover{ transform:translateY(-2px); box-shadow:0 8px 25px rgba(40,167,69,.4); }
+
+        .card-result { display:flex; gap:16px; align-items:flex-start; padding:12px; border-radius:10px; background:#fff; border:1px solid #eee; margin-bottom:12px; }
+        .card-result img{ width:140px; height:auto; object-fit:contain; border-radius:6px; }
+
+        @keyframes fadeInDown{ from{ opacity:0; transform:translateY(-30px);} to{ opacity:1; transform:translateY(0);} }
+        @keyframes fadeInUp{ from{ opacity:0; transform:translateY(30px);} to{ opacity:1; transform:translateY(0);} }
+
+        @media (max-width:768px){
+            .selection-grid{ grid-template-columns:1fr; }
+            .checkbox-group{ grid-template-columns:1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- floating particles (원본) -->
+    <div class="particle" style="width:8px;height:8px;top:20%;left:10%;animation-delay:0s;"></div>
+    <div class="particle" style="width:6px;height:6px;top:60%;left:90%;animation-delay:2s;"></div>
+    <div class="particle" style="width:10px;height:10px;top:80%;left:20%;animation-delay:4s;"></div>
+
+    <div class="container">
+        <header class="header">
+            <h1 class="logo">Card Navi</h1>
+            <p class="subtitle">맞춤형 카드 추천 시스템</p>
+        </header>
+
+        <main class="main-card">
+            <h2 class="section-title">지역구, 성별, 연령대 선택 후 검색 버튼을 눌러 주세요</h2>
+
+            <div class="selection-grid">
+                <div class="selection-item">
+                    <div class="selection-label">지역구 선택 <span class="selection-badge">🎯</span></div>
+                    <select id="region">
+                        <option value="Gwan">권선구</option>
+                        <option value="Young">영통구</option>
+                        <option value="Jang">장안구</option>
+                        <option value="Pal">팔달구</option>
+                    </select>
+                </div>
+
+                <div class="selection-item">
+                    <div class="selection-label">성별 선택 <span class="selection-badge">👤</span></div>
+                    <select id="sex">
+                        <option value="M">남성</option>
+                        <option value="F">여성</option>
+                    </select>
+                </div>
+
+                <div class="selection-item">
+                    <div class="selection-label">연령 선택 <span class="selection-badge">🎯</span></div>
+                    <select id="age">
+                        <option value="20s">20대</option>
+                        <option value="30s">30대</option>
+                        <option value="40s">40대</option>
+                        <option value="50s">50대</option>
+                        <option value="60s">60대</option>
+                        <option value="70s">70대</option>
+                        <option value="80s">80대</option>
+                        <option value="90s">90대</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="search-section">
+                <button class="search-button" onclick="showOptions()">🔍 검색하기</button>
+            </div>
+
+            <!-- 결과: 추천 대분류 / 전체 대분류 / 소분류 / 카드리스트가 모두 이 안에 그려집니다 -->
+            <div id="resultContainer" class="dynamic-content"></div>
+        </main>
+    </div>
+
+    <!-- PapaParse (CSV 파싱) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+    <script>
+    // === 데이터/맵 초기화 ===
+    const subCategoryMap = {
+        "공연/전시": ["공연관람", "문화서비스", "전시장", "경기관람"],
+        "디저트": ["제과/제빵/떡/케익", "커피/음료"],
+        "생활서비스": ["미용서비스", "세탁/가사서비스", "연료판매", "차량관리/서비스", "보안/운송", "무점포서비스", "사우나/휴게시설", "수리서비스", "렌탈서비스", "교통서비스", "전문서비스", "여행/유학대행", "부동산"],
+        "소매/유통": ["건강/기호식품", "사무/교육용품", "서적/도서", "선물/완구", "스포츠/레져용품", "음/식료품소매", "의복/의류", "인테리어/가정용품", "종합소매점", "차량관리/부품", "악기/공예", "패션잡화", "화장품소매", "차량판매", "가전제품", "유아용품"],
+        "식사": ["고기요리", "닭/오리요리", "별식/퓨전요리", "부페", "분식", "양식", "일식/수산물", "중식", "패스트푸드", "한식", "휴게소/대형업체"],
+        "여가/오락": ["숙박", "일반스포츠", "취미/오락", "요가/단전/마사지"],
+        "의료/건강": ["수의업", "의약/의료품", "일반병원", "특화병원", "종합병원"],
+        "전자상거래": ["인터넷쇼핑", "음식배달서비스"]
+    };
+
+    // CSV에서 읽은 카드 데이터 저장
+    let cardData = [];
+
+    // CSV 로드 (raw github url)
+    Papa.parse("https://raw.githubusercontent.com/SUNH4/Outlier_Flow/main/final_web.csv", {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+            cardData = results.data || [];
+            // 로드 완료시 콘솔만 남김 (원하시면 제거 가능)
+            // console.log("CSV loaded", cardData.length);
+        }
+    });
+
+    /* ============= 주요 플로우 =============
+       1) showOptions() : 지역/성별/연령 선택 후 '검색' 눌렀을 때, 추천 대분류+전체 대분류 렌더
+       2) '🔍 소분류 검색' 버튼 : 체크된 대분류(추천/전체)를 모아 소분류 목록 렌더
+       3) 소분류 목록 아래 '카드 검색' 버튼 : 클릭하면 CSV에서 대분류 OR 소분류 태그가 일치하는 카드 필터 -> 출력
+    =======================================*/
+
+    function showOptions() {
+        const sex = document.getElementById("sex").value;
+        const age = document.getElementById("age").value;
+        const region = document.getElementById("region").value;
+        const resultDiv = document.getElementById("resultContainer");
+        resultDiv.innerHTML = "";
+
+        // 추천 업종 결정 (원본 로직 그대로)
+        let recommendedItems = [];
+        if (region === "Gwan" && sex === "M" && age === "20s") {
+            recommendedItems = ["소매/유통","식사","생활서비스","의료/건강","디저트"];
+        } else if (region === "Gwan" && sex === "F" && age === "20s") {
+            recommendedItems = ["소매/유통","의료/건강","식사","생활서비스","디저트"];
+        } else if (region === "Gwan" && sex === "M" && age === "30s") {
+            recommendedItems = ["소매/유통","생활서비스","식사","의료/건강","디저트"];
+        } else if (region === "Gwan" && sex === "F" && age === "30s") {
+            recommendedItems = ["소매/유통","의료/건강","식사","생활서비스","디저트"];
+        } else if (region === "Gwan" && sex === "M" && age === "40s") {
+            recommendedItems = ["소매/유통","생활서비스","식사","의료/건강","디저트"];
+        } else if (region === "Gwan" && sex === "F" && age === "40s") {
+            recommendedItems = ["소매/유통","의료/건강","생활서비스","식사","디저트"];
+        } else if (region === "Gwan" && sex === "M" && age === "50s") {
+            recommendedItems = ["소매/유통","생활서비스","식사","의료/건강","여가/오락"];
+        } else if (region === "Gwan" && sex === "F" && age === "50s") {
+            recommendedItems = ["소매/유통","의료/건강","생활서비스","식사","디저트"];
+        } else if (region === "Gwan" && sex === "M" && age === "60s") {
+            recommendedItems = ["소매/유통","생활서비스","식사","의료/건강","여가/오락"];
+        } else if (region === "Gwan" && sex === "F" && age === "60s") {
+            recommendedItems = ["소매/유통","의료/건강","생활서비스","식사","디저트"];
+        } else if (region === "Gwan" && sex === "M" && age === "70s") {
+            recommendedItems = ["소매/유통","생활서비스","의료/건강","식사","디저트"];
+        } else if (region === "Gwan" && sex === "F" && age === "70s") {
+            recommendedItems = ["소매/유통","의료/건강","식사","생활서비스","디저트"];
+        } else if (region === "Gwan" && sex === "M" && age === "80s") {
+            recommendedItems = ["소매/유통","의료/건강","식사","생활서비스","디저트"];
+        } else if (region === "Gwan" && sex === "F" && age === "80s") {
+            recommendedItems = ["소매/유통","의료/건강","식사","생활서비스","디저트"];
+        }
+        else if (region === "Young" && sex === "M" && age === "20s") {
+            recommendedItems = ["소매/유통","식사","의료/건강","생활서비스","전자상거래"];
+        } else if (region === "Young" && sex === "F" && age === "20s") {
+            recommendedItems = ["소매/유통","식사","의료/건강","전자상거래","디저트"];
+        } else if (region === "Young" && sex === "M" && age === "30s") {
+            recommendedItems = ["소매/유통","식사","의료/건강","전자상거래","생활서비스"];
+        } else if (region === "Young" && sex === "F" && age === "30s") {
+            recommendedItems = ["소매/유통","의료/건강","식사","전자상거래","생활서비스"];
+        } else if (region === "Young" && sex === "M" && age === "40s") {
+            recommendedItems = ["소매/유통","의료/건강","식사","생활서비스","전자상거래"];
+        } else if (region === "Young" && sex === "F" && age === "40s") {
+            recommendedItems = ["의료/건강","소매/유통","식사","생활서비스","전자상거래"];
+        } else if (region === "Young" && sex === "M" && age === "50s") {
+            recommendedItems = ["소매/유통","의료/건강","식사","생활서비스","디저트"];
+        } else if (region === "Young" && sex === "F" && age === "50s") {
+            recommendedItems = ["의료/건강","소매/유통","식사","생활서비스","전자상거래"];
+        } else if (region === "Young" && sex === "M" && age === "60s") {
+            recommendedItems = ["의료/건강","소매/유통","식사","생활서비스","전자상거래"];
+        } else if (region === "Young" && sex === "F" && age === "60s") {
+            recommendedItems = ["의료/건강","소매/유통","식사","생활서비스","전자상거래"];
+        } else if (region === "Young" && sex === "M" && age === "70s") {
+            recommendedItems = ["의료/건강","소매/유통","식사","생활서비스","전자상거래"];
+        } else if (region === "Young" && sex === "F" && age === "70s") {
+            recommendedItems = ["의료/건강","소매/유통","식사","생활서비스","디저트"];
+        } else if (region === "Young" && sex === "M" && age === "80s") {
+            recommendedItems = ["의료/건강","소매/유통","식사","생활서비스","전자상거래"];
+        } else if (region === "Young" && sex === "F" && age === "80s") {
+            recommendedItems = ["의료/건강","소매/유통","식사","생활서비스","전자상거래"];
+        }
+        else if (region === "Jang" && sex === "M" && age === "20s") {
+            recommendedItems = ["소매/유통","식사","생활서비스","의료/건강","여가/오락"];
+        } else if (region === "Jang" && sex === "F" && age === "20s") {
+            recommendedItems = ["소매/유통","생활서비스","식사","의료/건강","디저트"];
+        } else if (region === "Jang" && sex === "M" && age === "30s") {
+            recommendedItems = ["소매/유통","생활서비스","식사","의료/건강","디저트"];
+        } else if (region === "Jang" && sex === "F" && age === "30s") {
+            recommendedItems = ["소매/유통","생활서비스","의료/건강","식사","디저트"];
+        } else if (region === "Jang" && sex === "M" && age === "40s") {
+            recommendedItems = ["소매/유통","생활서비스","식사","의료/건강","디저트"];
+        } else if (region === "Jang" && sex === "F" && age === "40s") {
+            recommendedItems = ["소매/유통","생활서비스","의료/건강","식사","디저트"];
+        } else if (region === "Jang" && sex === "M" && age === "50s") {
+            recommendedItems = ["소매/유통","생활서비스","식사","의료/건강","여가/오락"];
+        } else if (region === "Jang" && sex === "F" && age === "50s") {
+            recommendedItems = ["소매/유통","생활서비스","의료/건강","식사","디저트"];
+        } else if (region === "Jang" && sex === "M" && age === "60s") {
+            recommendedItems = ["소매/유통","생활서비스","식사","의료/건강","여가/오락"];
+        } else if (region === "Jang" && sex === "F" && age === "60s") {
+            recommendedItems = ["소매/유통","의료/건강","식사","생활서비스","전자상거래"];
+        } else if (region === "Jang" && sex === "M" && age === "70s") {
+            recommendedItems = ["소매/유통","의료/건강","생활서비스","식사","여가/오락"];
+        } else if (region === "Jang" && sex === "F" && age === "70s") {
+            recommendedItems = ["소매/유통","의료/건강","식사","생활서비스","전자상거래"];
+        } else if (region === "Jang" && sex === "M" && age === "80s") {
+            recommendedItems = ["소매/유통","의료/건강","식사","생활서비스","전자상거래"];
+        } else if (region === "Jang" && sex === "F" && age === "80s") {
+            recommendedItems = ["소매/유통","의료/건강","식사","생활서비스","디저트"];
+        }
+        else if (region === "Pal" && sex === "M" && age === "20s") {
+            recommendedItems = ["식사","소매/유통","의료/건강","여가/오락","생활서비스"];
+        } else if (region === "Pal" && sex === "F" && age === "20s") {
+            recommendedItems = ["식사","소매/유통","의료/건강","디저트","생활서비스"];
+        } else if (region === "Pal" && sex === "M" && age === "30s") {
+            recommendedItems = ["식사","소매/유통","의료/건강","생활서비스","여가/오락"];
+        } else if (region === "Pal" && sex === "F" && age === "30s") {
+            recommendedItems = ["의료/건강","식사","소매/유통","생활서비스","디저트"];
+        } else if (region === "Pal" && sex === "M" && age === "40s") {
+            recommendedItems = ["식사","소매/유통","의료/건강","생활서비스","여가/오락"];
+        } else if (region === "Pal" && sex === "F" && age === "40s") {
+            recommendedItems = ["의료/건강","소매/유통","식사","생활서비스","디저트"];
+        } else if (region === "Pal" && sex === "M" && age === "50s") {
+            recommendedItems = ["의료/건강","소매/유통","식사","생활서비스","여가/오락"];
+        } else if (region === "Pal" && sex === "F" && age === "50s") {
+            recommendedItems = ["의료/건강","소매/유통","식사","생활서비스","디저트"];
+        } else if (region === "Pal" && sex === "M" && age === "60s") {
+            recommendedItems = ["의료/건강","소매/유통","식사","생활서비스","여가/오락"];
+        } else if (region === "Pal" && sex === "F" && age === "60s") {
+            recommendedItems = ["소매/유통","의료/건강","식사","생활서비스","디저트"];
+        } else if (region === "Pal" && sex === "M" && age === "70s") {
+            recommendedItems = ["의료/건강","소매/유통","식사","생활서비스","디저트"];
+        } else if (region === "Pal" && sex === "F" && age === "70s") {
+            recommendedItems = ["의료/건강","소매/유통","식사","생활서비스","디저트"];
+        } else if (region === "Pal" && sex === "M" && age === "80s") {
+            recommendedItems = ["의료/건강","소매/유통","식사","생활서비스","디저트"];
+        } else if (region === "Pal" && sex === "F" && age === "80s") {
+            recommendedItems = ["의료/건강","소매/유통","식사","생활서비스","디저트"];
+        }
+
+        const allItems = ["소매/유통","생활서비스","여가/오락","식사","디저트","의료/건강","공연/전시","전자상거래"];
+
+        // --- 추천 업종 카드 ---
+        const recCard = document.createElement("div");
+        recCard.className = "results-card";
+        const recTitle = document.createElement("h3");
+        recTitle.className = "category-title";
+        recTitle.innerHTML = "🎯 추천 업종 선택";
+        recCard.appendChild(recTitle);
+
+        const recGroup = document.createElement("div");
+        recGroup.className = "checkbox-group";
+        recGroup.style.gridTemplateColumns = "1fr";
+        recommendedItems.forEach(item => {
+            const label = document.createElement("label");
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.name = "recommended";
+            checkbox.value = item;
+            const span = document.createElement("span");
+            span.textContent = item;
+            label.appendChild(checkbox);
+            label.appendChild(span);
+            recGroup.appendChild(label);
+        });
+        recCard.appendChild(recGroup);
+        resultDiv.appendChild(recCard);
+
+        // --- 전체 업종 카드 ---
+        const allCard = document.createElement("div");
+        allCard.className = "results-card";
+        const allTitle = document.createElement("h3");
+        allTitle.className = "category-title";
+        allTitle.innerHTML = "📋 전체 업종 선택";
+        allCard.appendChild(allTitle);
+
+        const allGroup = document.createElement("div");
+        allGroup.className = "checkbox-group";
+        allItems.forEach(item => {
+            const label = document.createElement("label");
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.name = "allCategory";
+            checkbox.value = item;
+            const span = document.createElement("span");
+            span.textContent = item;
+            label.appendChild(checkbox);
+            label.appendChild(span);
+            allGroup.appendChild(label);
+        });
+        allCard.appendChild(allGroup);
+        resultDiv.appendChild(allCard);
+
+        // --- 소분류 생성 버튼 (아래 '소분류 검색' 버튼) ---
+        const buttonContainer = document.createElement("div");
+        buttonContainer.style.textAlign = "center";
+        buttonContainer.style.marginTop = "2rem";
+        const subBtn = document.createElement("button");
+        subBtn.className = "action-button";
+        subBtn.innerHTML = "🔍 소분류 검색";
+        // 클릭하면 체크된 대분류(추천 + 전체)들을 모아서 소분류 렌더
+        subBtn.onclick = () => {
+            const selectedRecommended = Array.from(document.querySelectorAll('input[name="recommended"]:checked')).map(el => el.value);
+            const selectedAll = Array.from(document.querySelectorAll('input[name="allCategory"]:checked')).map(el => el.value);
+            const selectedSet = Array.from(new Set([...selectedRecommended, ...selectedAll]));
+            renderSubCategories(selectedSet);
+        };
+        buttonContainer.appendChild(subBtn);
+        resultDiv.appendChild(buttonContainer);
+    }
+
+    // --- 소분류 렌더 및 "카드 검색" 버튼 추가 ---
+    function renderSubCategories(selectedCategories) {
+        // 제거: 기존 소분류 컨테이너가 있으면 제거
+        const existing = document.querySelector('.subcategory-container');
+        if (existing) existing.remove();
+
+        if (!selectedCategories || selectedCategories.length === 0) {
+            // 선택된 대분류가 없으면 아무것도 표시하지 않음 (요청대로 알림 없음)
+            return;
+        }
+
+        const resultDiv = document.getElementById("resultContainer");
+        const subContainer = document.createElement("div");
+        subContainer.className = "results-card subcategory-container";
+        subContainer.id = "subcategoryContainer";
+
+        const subMainTitle = document.createElement("h3");
+        subMainTitle.className = "category-title";
+        subMainTitle.innerHTML = "🔍 소분류 선택";
+        subContainer.appendChild(subMainTitle);
+
+        selectedCategories.forEach(category => {
+            if (!subCategoryMap[category]) return;
+            const subGroup = document.createElement("div");
+            subGroup.className = "subcategory-group";
+
+            const groupTitle = document.createElement("div");
+            groupTitle.className = "subcategory-title";
+            groupTitle.textContent = category;
+            subGroup.appendChild(groupTitle);
+
+            const subItems = document.createElement("div");
+            subItems.className = "subcategory-items";
+
+            subCategoryMap[category].forEach(sub => {
+                const label = document.createElement("label");
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.name = "subcategory";
+                checkbox.value = sub;
+                const span = document.createElement("span");
+                span.textContent = sub;
+                label.appendChild(checkbox);
+                label.appendChild(span);
+                subItems.appendChild(label);
+            });
+
+            subGroup.appendChild(subItems);
+            subContainer.appendChild(subGroup);
+        });
+
+        // 카드 검색 버튼 추가 (소분류 선택 후 클릭)
+        const searchBtn = document.createElement("button");
+        searchBtn.className = "action-button";
+        searchBtn.innerText = "💳 카드 검색";
+        searchBtn.onclick = () => {
+            // 선택한 대분류(추천/전체)와 소분류를 가져와서 검색
+            const bigSel = Array.from(document.querySelectorAll('input[name="recommended"]:checked, input[name="allCategory"]:checked')).map(el => el.value);
+            const subSel = Array.from(document.querySelectorAll('input[name="subcategory"]:checked')).map(el => el.value);
+            // 검색 실행
+            runCardSearch(bigSel, subSel);
+        };
+        // 버튼 영역
+        const btnWrap = document.createElement("div");
+        btnWrap.style.textAlign = "center";
+        btnWrap.style.marginTop = "1rem";
+        btnWrap.appendChild(searchBtn);
+        subContainer.appendChild(btnWrap);
+
+        resultDiv.appendChild(subContainer);
+    }
+
+    // --- 카드 검색 실제 로직: CSV 데이터에서 대분류 OR 소분류 태그가 맞는 카드 필터 ---
+    function runCardSearch(selectedBigCategories, selectedSubCategories) {
+        // if nothing selected -> do nothing (요청대로 alert 제거)
+        if ((!selectedBigCategories || selectedBigCategories.length === 0) && (!selectedSubCategories || selectedSubCategories.length === 0)) {
+            // 아무 것도 하지 않음 (결과 영역 클리어)
+            const resArea = document.getElementById("cardResultsArea");
+            if (resArea) resArea.remove();
+            return;
+        }
+
+        // helper: parse tag-field (대분류태그/소분류태그) which stored as "['a','b']"
+        function parseTagField(field) {
+            if (!field) return [];
+            // try JSON.parse after replacing single-quotes with double-quotes
+            try {
+                const normalized = field.replace(/'/g, '"');
+                const arr = JSON.parse(normalized);
+                if (Array.isArray(arr)) return arr;
+            } catch (e) {
+                // fallback: split on comma
+                return field.replace(/^\[|\]$/g, '').split(',').map(s => s.replace(/['"]/g, '').trim()).filter(Boolean);
+            }
+            return [];
+        }
+
+        const results = cardData.filter(row => {
+            // some CSV rows may be empty objects; guard
+            if (!row || Object.keys(row).length === 0) return false;
+            const bigTags = parseTagField(row['대분류태그']);
+            const smallTags = parseTagField(row['소분류태그']);
+            // match if ANY selected big category present in bigTags OR ANY selected sub present in smallTags
+            const bigMatch = selectedBigCategories && selectedBigCategories.some(b => bigTags.includes(b));
+            const subMatch = selectedSubCategories && selectedSubCategories.some(s => smallTags.includes(s));
+            return bigMatch || subMatch;
+        });
+
+        displayCardResults(results);
+    }
+
+    // --- 카드 결과 렌더 ---
+    function displayCardResults(cards) {
+        // remove previous result area if exists
+        const prevArea = document.getElementById("cardResultsArea");
+        if (prevArea) prevArea.remove();
+
+        const resultDiv = document.getElementById("resultContainer");
+        const area = document.createElement("div");
+        area.id = "cardResultsArea";
+        area.className = "results-card";
+
+        const title = document.createElement("h3");
+        title.className = "category-title";
+        title.textContent = `💳 검색 결과 (${cards.length})`;
+        area.appendChild(title);
+
+        const listWrap = document.createElement("div");
+        listWrap.style.marginTop = "1rem";
+
+        if (!cards || cards.length === 0) {
+            const p = document.createElement("p");
+            p.textContent = "조건에 맞는 카드가 없습니다.";
+            listWrap.appendChild(p);
+        } else {
+            cards.forEach(c => {
+                // sanitize fields (some CSV rows may include trailing empty fields)
+                const imgUrl = c['이미지 URL'] || c['이미지URL'] || "";
+                const name = c['카드명'] || "-";
+                const chk = c['체크/신용'] || "-";
+                const benefit = c['통합혜택'] || "-";
+                const bigTags = c['대분류태그'] || "";
+                const smallTags = c['소분류태그'] || "";
+                const detailLink = c['카드 디테일 링크'] || c['카드디테일링크'] || "#";
+
+                const cardDiv = document.createElement("div");
+                cardDiv.className = "card-result";
+
+                const img = document.createElement("img");
+                img.src = imgUrl;
+                img.alt = name;
+                img.onerror = function(){ this.style.opacity = .5; this.style.filter = "grayscale(60%)"; };
+
+                const info = document.createElement("div");
+                info.style.maxWidth = "760px";
+                info.innerHTML = `
+                    <h3 style="margin:0 0 6px 0;">${escapeHtml(name)} <small style="color:#666; font-weight:600;">(${escapeHtml(chk)})</small></h3>
+                    <p style="margin:6px 0;"><strong>혜택:</strong> ${escapeHtml(benefit)}</p>
+                    <p style="margin:6px 0;"><strong>업종:</strong> ${escapeHtml(bigTags)} / ${escapeHtml(smallTags)}</p>
+                    <p style="margin:6px 0;"><a href="${escapeAttr(detailLink)}" target="_blank" rel="noopener">자세히 보기</a></p>
+                `;
+
+                cardDiv.appendChild(img);
+                cardDiv.appendChild(info);
+                listWrap.appendChild(cardDiv);
+            });
+        }
+
+        area.appendChild(listWrap);
+        resultDiv.appendChild(area);
+
+        // scroll to results
+        area.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    // 소규모 헬퍼: XSS 대비(간단)
+    function escapeHtml(str) {
+        if (typeof str !== "string") return str;
+        return str.replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+    function escapeAttr(s){ return escapeHtml(String(s || "")); }
+
+    </script>
+</body>
+</html>
