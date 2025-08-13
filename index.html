@@ -753,7 +753,11 @@
         cardSearchBtn.className = "action-button";
         cardSearchBtn.innerText = "카드 검색";
         cardSearchBtn.onclick = searchCards;
-        subContainer.appendChild(cardSearchBtn);
+
+        cardSearchBtn.style.display = "block";
+        cardSearchBtn.style.margin = "20px auto";
+    
+        subContainer.appendChild(cardSearchBtn); // 소분류 영역 바로 밑에 추가
     }
 
     // 카드 검색 함수
