@@ -730,7 +730,7 @@
     let cardData = [];
 
     // CSV 불러오기
-    fetch("https://sunh4.github.io/Outlier25_FLOW/final_web.csv")
+    fetch("https://sunh4.github.io/Outlier_Flow/final_web.csv")
         .then(res => res.text())
         .then(text => {
             const parsed = Papa.parse(text, { header: true });
