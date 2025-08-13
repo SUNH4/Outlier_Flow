@@ -682,14 +682,6 @@
 
                     resultDiv.appendChild(subContainer);
                 }
-                
-                // "카드 검색" 버튼 추가
-                const cardSearchBtn = document.createElement("button");
-                cardSearchBtn.className = "action-button";
-                cardSearchBtn.innerHTML = "💳 카드 검색";
-                cardSearchBtn.onclick = searchCards;
-                resultDiv.appendChild(cardSearchBtn);
-
             };
 
             // 버튼 추가
@@ -703,6 +695,13 @@
             subBtn.onclick = showSubCategories;
             buttonContainer.appendChild(subBtn);
             resultDiv.appendChild(buttonContainer);
+
+            // "카드 검색" 버튼 추가
+            const cardSearchBtn = document.createElement("button");
+            cardSearchBtn.className = "action-button";
+            cardSearchBtn.innerHTML = "💳 카드 검색";
+            cardSearchBtn.onclick = searchCards;
+            resultDiv.appendChild(cardSearchBtn);
         }
 
         // 파티클 생성 함수
