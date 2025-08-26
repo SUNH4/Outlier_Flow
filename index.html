@@ -879,7 +879,7 @@
 
             const headerMap = {
                 cardName: findHeaderIndex(["카드명", "카드이름", "cardname"]),
-                bigTag: findHeaderIndex(["대분류태그", "업종", "bigcategory"]),
+                bigTag: findHeaderIndex(["대분류태그", "대분류", "bigcategory"]),
                 smallTag: findHeaderIndex(["소분류태그", "소분류", "subcategory"]),
                 imageUrl: findHeaderIndex(["이미지url", "이미지URL", "이미지"]),
                 type: findHeaderIndex(["체크/신용", "카드종류", "type"]),
@@ -986,7 +986,7 @@
               type.style.color = "#666";
 
               const bigTagElement = document.createElement("p");
-              bigTagElement.textContent = "대분류: " + parseTagFieldToArray(card["대분류태그"]).join(", ");
+              bigTagElement.textContent = "업종: " + parseTagFieldToArray(card["대분류태그"]).join(", ");
               bigTagElement.style.fontSize = "0.8rem";
               bigTagElement.style.color = "#444";
 
